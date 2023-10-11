@@ -13,7 +13,7 @@ def is_autheticated(fn):
 
         try:
             if auth_token:
-                user_session = CustAuthToken.objects.get(token_id = auth_token)
+                user_session = CustAuthToken.objects.get(token = auth_token)
             else:
                 return Response({"status": "fail", "message": "No Authorization token"}, status=401)
         except:

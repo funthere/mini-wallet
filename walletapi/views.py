@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
 from .models import Account, CustAuthToken, Transaction
-from .serializer import DepositSerializer, PatchWalletSerializer, PostTransactionSerializer, TokenSerializer, AccountSerializer, TransactionListSerializer, WithdrawalSerializer
+from .serializer import DepositSerializer, PatchWalletSerializer, PostAccountSerializer, PostTransactionSerializer, TokenSerializer, AccountSerializer, TransactionListSerializer, WithdrawalSerializer
 from .decorators import is_autheticated
 from django.utils import timezone
 from django.db import transaction
@@ -18,21 +18,25 @@ logging.basicConfig(level=logging.INFO,filename='apiLogs.log')
 def init_wallet(request):
     try:
         if request.method == 'POST':
+            serializer = PostAccountSerializer(data=request.data)
+            if not serializer.is_valid():
+                return JsonResponse({
+                    "status" : "fail",
+                    "data" : serializer.errors
+                    })
             customer_xid = request.POST.get('customer_xid')
-            statusCode = 200
             account = Account.objects.filter(owned_by = customer_xid).first()
             if account and account.id != '':
                 token = CustAuthToken.objects.filter(user = account).first()
             else:
                 account = Account(owned_by = customer_xid)
                 token = account.create()
-                statusCode = 201
 
             serialized_data = TokenSerializer(token)
             return JsonResponse({
                     "status": "success",
                     "data": serialized_data.data
-                }, status = statusCode
+                }, status = 201
             )
     except Exception as ex:
         logging.error("Exception in init wallet : {}".format(str(ex)))
@@ -43,7 +47,7 @@ def init_wallet(request):
 @is_autheticated
 def enable_wallet(request):
     try:
-        session = get_session(token_id = request.headers.get('Authorization'))
+        session = get_session(token = request.headers.get('Authorization'))
         if request.method == "POST":
             if session['account'].status == 'enabled':
                 return JsonResponse({
@@ -100,7 +104,7 @@ def enable_wallet(request):
 @api_view(['POST'])
 @is_autheticated
 def deposit(request):
-    session = get_session(token_id = request.headers.get('Authorization'))
+    session = get_session(token = request.headers.get('Authorization'))
     if request.method == "POST":
         serializer = PostTransactionSerializer(data=request.data)
         if not serializer.is_valid():
@@ -142,7 +146,7 @@ def deposit(request):
 @api_view(['POST'])
 @is_autheticated
 def withdraw(request):
-    session = get_session(token_id = request.headers.get('Authorization'))
+    session = get_session(token = request.headers.get('Authorization'))
 
     serializer = PostTransactionSerializer(data=request.data)
     if not serializer.is_valid():
@@ -187,7 +191,7 @@ def withdraw(request):
 @api_view(['GET'])
 @is_autheticated
 def api_transactions(request):
-    session = get_session(token_id = request.headers.get('Authorization'))
+    session = get_session(token = request.headers.get('Authorization'))
     if session['account'].status == 'disabled':
         return JsonResponse({
             "status" : "fail",
@@ -208,9 +212,9 @@ def check_reference_id(reference_id):
     except:
         return True
 
-def get_session(token_id):
-    token_id = str(token_id).lstrip('Token ')
-    user_token = CustAuthToken.objects.get(token_id = token_id)
+def get_session(token):
+    token = str(token).lstrip('Token ')
+    user_token = CustAuthToken.objects.get(token = token)
     account = Account.objects.get(id = user_token.user.id)
 
     return {"user_token": user_token, "account": account}

@@ -38,9 +38,9 @@ class Transaction(models.Model):
         return format(self.id)
 
 class CustAuthToken(models.Model):
-    token_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    token = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(Account,on_delete=models.CASCADE)
 
     def __str__(self):
-        return format(self.token_id)
+        return format(self.token)
 

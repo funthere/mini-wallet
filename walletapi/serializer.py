@@ -3,7 +3,12 @@ from .models import Account, Transaction
 from rest_framework.fields import Field
 
 class TokenSerializer(serializers.Serializer):
-    token_id = serializers.CharField(max_length=50)
+    token = serializers.CharField(max_length=50)
+
+class PostAccountSerializer(serializers.Serializer):
+    customer_xid = serializers.CharField(
+        required=True,
+    )
 
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:
