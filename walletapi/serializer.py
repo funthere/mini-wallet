@@ -59,3 +59,21 @@ class WithdrawalSerializer(serializers.ModelSerializer):
             "amount",
             "reference_id",
         )
+
+class TransactionListSerializer(serializers.ModelSerializer):
+    transacted_at = serializers.SerializerMethodField(read_only=True)
+    type = serializers.SerializerMethodField(read_only=True)
+    status = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Transaction
+        fields = ['id', 'status', 'transacted_at', 'type', 'amount', 'reference_id']
+
+    def get_transacted_at(self, instance):
+        return instance.transaction_time
+
+    def get_type(self, instance):
+        return instance.transaction_type
+
+    def get_status(self, instance):
+        return "success"

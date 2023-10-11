@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
 from .models import Account, CustAuthToken, Transaction
-from .serializer import DepositSerializer, PatchWalletSerializer, PostTransactionSerializer, TokenSerializer, AccountSerializer, WithdrawalSerializer
+from .serializer import DepositSerializer, PatchWalletSerializer, PostTransactionSerializer, TokenSerializer, AccountSerializer, TransactionListSerializer, WithdrawalSerializer
 from .decorators import is_autheticated
 from django.utils import timezone
 from django.db import transaction
@@ -109,6 +109,8 @@ def deposit(request):
                 "data" : serializer.errors
                 })
 
+        amount = request.data.get("amount")
+        reference_id = request.data.get("reference_id")
         if session['account'].status == 'disabled':
             return JsonResponse({
                 "status" : "fail",
@@ -119,9 +121,6 @@ def deposit(request):
                 "status" : "fail",
                 "data" : {"referance_id" : "referance_id not unique"}
                 })
-
-        amount = request.data.get("amount")
-        reference_id = request.data.get("reference_id")
 
         with transaction.atomic():
             tr = Transaction(
@@ -184,6 +183,21 @@ def withdraw(request):
     serialized_tr = WithdrawalSerializer(tr)
 
     return JsonResponse({"status": "success", "data": {"withdrawal": serialized_tr.data}}, status = 201)
+
+@api_view(['GET'])
+@is_autheticated
+def api_transactions(request):
+    session = get_session(token_id = request.headers.get('Authorization'))
+    if session['account'].status == 'disabled':
+        return JsonResponse({
+            "status" : "fail",
+            "data" : {"error" : "Account is Disabled"}
+        })
+
+    transactions = Transaction.objects.filter(transaction_by = session['account']).order_by('-transaction_time').all()
+    data = {'transactions': TransactionListSerializer(transactions, many = True).data}
+
+    return JsonResponse({"status" : 'success', "data": data})
 
 def check_reference_id(reference_id):
     try:
