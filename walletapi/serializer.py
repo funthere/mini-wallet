@@ -7,7 +7,7 @@ class TokenSerializer(serializers.Serializer):
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = ['id', 'owned_by', 'status', 'changed_at', 'balance']
+        fields = ['id', 'owned_by', 'status', 'enabled_at', 'balance']
 
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:

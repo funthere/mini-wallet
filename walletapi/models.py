@@ -4,14 +4,14 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 import uuid
 
-ACCOUNT_STATUS = [('E','Enabled'),('D','Disabled')]
+ACCOUNT_STATUS = [('enabled','Enabled'),('disabled','Disabled')]
 
 # Create your models here.
 class Account(models.Model):
     id = models.CharField(max_length=50,default=uuid.uuid1(),primary_key = True)
     owned_by = models.CharField(max_length=50)
-    status = models.CharField(max_length=10,choices=ACCOUNT_STATUS,default='D')
-    changed_at = models.DateTimeField(auto_now=False,auto_now_add=False,null=True)
+    status = models.CharField(max_length=10,choices=ACCOUNT_STATUS,default='disabled')
+    enabled_at = models.DateTimeField(auto_now=False,auto_now_add=False,null=True)
     balance = models.DecimalField(max_digits = 15,decimal_places=2)
 
     def create(self):
