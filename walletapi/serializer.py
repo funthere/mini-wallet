@@ -10,6 +10,9 @@ class AccountSerializer(serializers.ModelSerializer):
         model = Account
         fields = ['id', 'owned_by', 'status', 'enabled_at', 'balance']
 
+class PatchWalletSerializer(serializers.Serializer):
+    is_disabled = serializers.BooleanField(required=True)
+
 class PostTransactionSerializer(serializers.Serializer):
     amount = serializers.IntegerField(required=True, min_value=0)
     reference_id = serializers.UUIDField(

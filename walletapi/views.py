@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
 from .models import Account, CustAuthToken, Transaction
-from .serializer import DepositSerializer, PostTransactionSerializer, TokenSerializer, AccountSerializer, WithdrawalSerializer
+from .serializer import DepositSerializer, PatchWalletSerializer, PostTransactionSerializer, TokenSerializer, AccountSerializer, WithdrawalSerializer
 from .decorators import is_autheticated
 from django.utils import timezone
 from django.db import transaction
@@ -67,6 +67,31 @@ def enable_wallet(request):
 
             return JsonResponse({"status":"success", "data":{"wallet":serialized_acc_data.data}})
 
+        elif request.method == "PATCH":
+            serializer = PatchWalletSerializer(data=request.data)
+            if not serializer.is_valid():
+                return JsonResponse({
+                        "status" : "fail",
+                        "data" : serializer.errors
+                    })
+            is_disabled = request.data.get('is_disabled')
+
+            if is_disabled == "true":
+                if session['account'].status == 'disabled':
+                    return JsonResponse({
+                        "status" : "fail",
+                        "data" : {"error" : "Account already diabled"}
+                    })
+                session['account'].status = 'disabled'
+                session['account'].save()
+                serialized_acc_data = AccountSerializer(session['account'])
+                return JsonResponse({"status":"success", "data": {"wallet": serialized_acc_data.data}})
+            else:
+                return JsonResponse({
+                    "status" : "fail",
+                    "data" : {"error" : "Invalid parameter value is_disabled"}
+                })
+
     except Exception as ex:
         logging.error("Exception in Enable wallet {}".format(str(ex)))
         return JsonResponse({"status": "error", "message":"Internal Server Error"}, status = 500)
@@ -79,18 +104,18 @@ def deposit(request):
     if request.method == "POST":
         serializer = PostTransactionSerializer(data=request.data)
         if not serializer.is_valid():
-            return Response({
+            return JsonResponse({
                 "status" : "fail",
                 "data" : serializer.errors
                 })
 
         if session['account'].status == 'disabled':
-            return Response({
+            return JsonResponse({
                 "status" : "fail",
                 "data" : {"error" : "Account is Disabled"}
                 })
         elif not check_reference_id(reference_id):
-            return Response({
+            return JsonResponse({
                 "status" : "fail",
                 "data" : {"referance_id" : "referance_id not unique"}
                 })
@@ -112,7 +137,7 @@ def deposit(request):
 
         serialized_tr = DepositSerializer(tr)
 
-        return Response({"status":"success", "data": {"deposit": serialized_tr.data}}, status = 201)
+        return JsonResponse({"status":"success", "data": {"deposit": serialized_tr.data}}, status = 201)
 
 
 @api_view(['POST'])
@@ -122,7 +147,7 @@ def withdraw(request):
 
     serializer = PostTransactionSerializer(data=request.data)
     if not serializer.is_valid():
-        return Response({
+        return JsonResponse({
             "status" : "fail",
             "data" : serializer.errors
             })
@@ -130,16 +155,16 @@ def withdraw(request):
     reference_id = request.POST.get('reference_id')
 
     if session['account'].status == 'disabled':
-        return Response({
+        return JsonResponse({
             "status" : "fail",
             "data" : {"error" : "Account is Disabled"}
             })
 
     elif amount > session['account'].balance:
-        return Response({"status": "fail", "data": {"error": "Insufficient Funds"}})
+        return JsonResponse({"status": "fail", "data": {"error": "Insufficient Funds"}})
 
     elif not check_reference_id(reference_id):
-        return Response({
+        return JsonResponse({
             "status" : "fail",
             "data" : {"error" : "referance_id not unique"}
             })
@@ -158,7 +183,7 @@ def withdraw(request):
 
     serialized_tr = WithdrawalSerializer(tr)
 
-    return Response({"status": "success", "data": {"withdrawal": serialized_tr.data}}, status = 201)
+    return JsonResponse({"status": "success", "data": {"withdrawal": serialized_tr.data}}, status = 201)
 
 def check_reference_id(reference_id):
     try:
