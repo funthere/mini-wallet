@@ -8,9 +8,12 @@ def is_autheticated(fn):
 
     def authenticate(request, **kwargs):
         auth_token = request.headers.get('Authorization')
+        # since value of Authorization: Token xxxtokenxxx, so trim the Token
+        auth_token = str(auth_token).lstrip('Token ')
+
         try:
             if auth_token:
-                user_session = CustAuthToken.objects.get(token_id = request.headers.get('Authorization'))
+                user_session = CustAuthToken.objects.get(token_id = auth_token)
             else:
                 return Response({"status": "fail", "message": "No Authorization token"}, status=401)
         except:
