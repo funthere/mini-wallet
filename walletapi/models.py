@@ -14,6 +14,14 @@ class Account(models.Model):
     changed_at = models.DateTimeField(auto_now=False,auto_now_add=False,null=True)
     balance = models.DecimalField(max_digits = 15,decimal_places=2)
 
+    def create(self):
+        if not self.balance:
+            self.balance = 0
+        self.save()
+        token = CustAuthToken(user = self)
+        token.save()
+        return token
+
     def __str__(self):
         return "Account : {}".format(self.id)
 
@@ -28,4 +36,10 @@ class Transaction(models.Model):
     def __str__(self):
         return "Transaction {}".format(self.id)
 
+class CustAuthToken(models.Model):
+    token_id = models.CharField(max_length=50,default=uuid.uuid1(),primary_key=True)
+    user = models.ForeignKey(Account,on_delete=models.CASCADE)
+
+    def __str__(self):
+        return "Token {}".format(self.token_id)
 
